@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::io::BufReader;
 use std::io::{Read, Seek};
 use std::str::FromStr;
+use regex::Regex;
 
 use log::warn;
 use quick_xml::events::attributes::{Attribute, Attributes};
@@ -1003,7 +1004,22 @@ fn read_sheet_data(
 // This tries to detect number formats that are definitely date/time formats.
 // This is definitely not perfect!
 fn is_custom_date_format(format: &str) -> bool {
-    format.bytes().all(|c| b"mdyMDYhsHS-/.: \\".contains(&c))
+    if format.bytes().all(|c| b"mdyMDYhsHS-/.: \\".contains(&c)) {
+        return true;
+    }
+
+    // See https://github.com/roo-rb/roo/blob/5339d3aee8f217528eb4f5ba39065705c19ebcdd/lib/roo/excelx/format.rb#L48
+    // NOTE: "d+(?![\]])" は ?! の構文が Rust では使えないので別の書き方で置き換える
+    let regex = Regex::new(r#"d+([^\]]|$)"#).unwrap();
+    if format.contains('y') || regex.is_match(format) {
+        if format.contains('h') || format.contains('s') {
+            return true;
+        } else {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 fn is_builtin_date_format_id(id: &[u8]) -> bool {
