@@ -178,7 +178,8 @@ impl<RS: Read + Seek> Xlsx<RS> {
             match xml.read_event_into(&mut buf) {
                 Ok(Event::Start(ref e)) if e.local_name().as_ref() == b"si" => {
                     if let Some(s) = read_string(&mut xml, e.name())? {
-                        self.strings.push(s);
+                        let valid_shared_strings = s.replace("_x000D_", "\n");
+                        self.strings.push(valid_shared_strings);
                     }
                 }
                 Ok(Event::End(ref e)) if e.local_name().as_ref() == b"sst" => break,
